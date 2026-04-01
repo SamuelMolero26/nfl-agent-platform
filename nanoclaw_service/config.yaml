@@ -1,0 +1,556 @@
+providers:
+  data_lake:
+    base_url: http://localhost:8000
+    timeout: 10
+  model_platform:
+    base_url: http://localhost:8080
+    timeout: 30
+
+tools:
+
+  # ── Data Lake: Query ────────────────────────────────────────────────────────
+
+  - name: run_sql_query
+    provider: data_lake
+    method: POST
+    path: /query
+    description: >
+      Run a read-only DuckDB SQL query against the data lake.
+      Use this for custom aggregations, cross-table joins, or any
+      analytical question not covered by a dedicated endpoint.
+      Body: {"sql": "SELECT ..."}
+    supervised: false
+
+  - name: list_tables
+    provider: data_lake
+    method: GET
+    path: /query/tables
+    description: >
+      List all registered DuckDB tables in the data lake.
+      Use this before writing SQL to know what tables and columns exist.
+    supervised: false
+
+  # ── Data Lake: Players ──────────────────────────────────────────────────────
+
+  - name: list_players
+    provider: data_lake
+    method: GET
+    path: /players
+    description: >
+      List NFL combine players with optional filters.
+      Use for browsing or filtering players by position, name, or season.
+      Supports query params: position, name, season, limit, offset.
+    supervised: false
+
+  - name: search_players
+    provider: data_lake
+    method: GET
+    path: /players/search
+    description: >
+      Full-text search for players by name fragment.
+      Use when the user mentions a player name but you need to resolve it
+      to a player_id before calling profile endpoints.
+      Query param: q (name fragment).
+    supervised: false
+
+  - name: get_player_by_name
+    provider: data_lake
+    method: GET
+    path: /players/{name}
+    description: >
+      Get a single combine player record by exact name.
+      Use when you already know the player's full name and need their
+      combine stats (forty, bench, vertical, broad, cone, shuttle).
+    supervised: false
+
+  - name: get_player_profile
+    provider: data_lake
+    method: GET
+    path: /players/id/{player_id}/profile
+    description: >
+      Full gold-layer profile for a player: identity, position, team,
+      draft info, and all computed metrics (athletic, production, durability,
+      draft value). Use this as the primary endpoint when the user asks
+      about a specific player — it returns everything in one call.
+    supervised: false
+
+  - name: get_player_athletic
+    provider: data_lake
+    method: GET
+    path: /players/id/{player_id}/athletic
+    description: >
+      Athletic score breakdown for a player: raw combine measurements
+      plus composite athletic score and percentile rankings.
+      Use when the user asks specifically about athleticism or combine performance.
+    supervised: false
+
+  - name: get_player_production
+    provider: data_lake
+    method: GET
+    path: /players/id/{player_id}/production
+    description: >
+      Season production metrics for a player (receptions, yards, TDs, etc.).
+      Use when the user asks about on-field performance or career stats.
+    supervised: false
+
+  - name: get_player_durability
+    provider: data_lake
+    method: GET
+    path: /players/id/{player_id}/durability
+    description: >
+      Durability profile for a player: games played, injury history indicators,
+      availability rate. Use when the user asks about injury history or reliability.
+    supervised: false
+
+  - name: get_player_draft_value
+    provider: data_lake
+    method: GET
+    path: /players/id/{player_id}/draft-value
+    description: >
+      Draft value metrics for a player: pick value, round, positional scarcity score.
+      Use when the user asks about draft capital, trade value, or pick efficiency.
+    supervised: false
+
+  - name: leaderboard_athletic
+    provider: data_lake
+    method: GET
+    path: /players/leaderboard/athletic
+    description: >
+      Rank all players by composite athletic score.
+      Use when the user wants to find the most athletic players overall
+      or within a position group. Supports query param: position.
+    supervised: false
+
+  - name: leaderboard_production
+    provider: data_lake
+    method: GET
+    path: /players/leaderboard/production
+    description: >
+      Rank all players by production score.
+      Use for identifying top performers by on-field output.
+      Supports query param: position.
+    supervised: false
+
+  - name: leaderboard_draft_value
+    provider: data_lake
+    method: GET
+    path: /players/leaderboard/draft-value
+    description: >
+      Rank players by draft value, broken down by round.
+      Use when the user asks which players represent the best value
+      at their draft position.
+    supervised: false
+
+  # ── Data Lake: Teams ────────────────────────────────────────────────────────
+
+  - name: list_teams
+    provider: data_lake
+    method: GET
+    path: /teams
+    description: >
+      List all NFL team abbreviations available in the data lake.
+      Use this to validate a team abbreviation before calling team-specific endpoints.
+    supervised: false
+
+  - name: get_team_stats
+    provider: data_lake
+    method: GET
+    path: /teams/{abbr}/stats
+    description: >
+      Season statistics for a team (wins, losses, points scored/allowed, yards, etc.).
+      Supports optional query params: season_start, season_end for a season range.
+      Use when the user asks about team performance or historical trends.
+    supervised: false
+
+  # ── Data Lake: Graph ────────────────────────────────────────────────────────
+
+  - name: get_player_graph_neighbors
+    provider: data_lake
+    method: GET
+    path: /graph/player/{player_id}/neighbors
+    description: >
+      Get the graph neighbors of a player node up to a given depth.
+      Returns related players, teams, and colleges as a subgraph.
+      Query param: depth (default 1). Use for relationship exploration.
+    supervised: false
+
+  - name: get_player_graph_profile
+    provider: data_lake
+    method: GET
+    path: /graph/player/{player_id}/profile
+    description: >
+      Graph-based profile for a player: node properties and all direct edges
+      (team contracts, college attended, drafted-by relationships).
+      Use when the user wants to understand a player's connections.
+    supervised: false
+
+  - name: get_player_career_path
+    provider: data_lake
+    method: GET
+    path: /graph/player/{player_id}/career
+    description: >
+      Player's career path through the graph: college → draft → team history.
+      Use when the user asks about career trajectory or team history.
+    supervised: false
+
+  - name: search_player_graph
+    provider: data_lake
+    method: GET
+    path: /graph/player/search/{name}
+    description: >
+      Search the graph for a player node by name fragment.
+      Returns matching player nodes with their IDs.
+      Use to resolve a name to a player_id in the graph layer.
+    supervised: false
+
+  - name: get_team_draft_history
+    provider: data_lake
+    method: GET
+    path: /graph/team/{abbr}/drafted
+    description: >
+      Full draft history for a team: all players drafted, by round and year.
+      Use when the user asks about a team's draft strategy or history.
+    supervised: false
+
+  - name: get_team_roster_graph
+    provider: data_lake
+    method: GET
+    path: /graph/team/{abbr}/roster
+    description: >
+      Current and historical roster for a team from the graph (CONTRACTED_BY edges).
+      Supports optional query param: season. Use for roster composition questions.
+    supervised: false
+
+  - name: get_graph_shortest_path
+    provider: data_lake
+    method: GET
+    path: /graph/path
+    description: >
+      Find the shortest path between two entities in the graph.
+      Query params: from_id, to_id. Use for "six degrees of separation" style
+      questions (e.g. how is player A connected to team B?).
+    supervised: false
+
+  - name: get_college_pipeline
+    provider: data_lake
+    method: GET
+    path: /graph/college/{name}/pipeline
+    description: >
+      Show the college-to-NFL pipeline for a given college: all players
+      from that school who entered the league, their teams, and draft positions.
+      Use when the user asks about a college's NFL talent output.
+    supervised: false
+
+  - name: get_full_graph_snapshot
+    provider: data_lake
+    method: GET
+    path: /graph/full
+    description: >
+      Return a limited snapshot of the full graph (nodes + edges).
+      Use sparingly — only when the user wants a high-level overview of
+      the entire graph structure. Results are truncated.
+    supervised: false
+
+  # ── Data Lake: Manage ───────────────────────────────────────────────────────
+
+  - name: list_datasets
+    provider: data_lake
+    method: GET
+    path: /manage/datasets
+    description: >
+      List all Parquet datasets in the data lake (staged and curated layers).
+      Use before running data management operations to know what datasets exist.
+    supervised: false
+
+  - name: preview_dataset
+    provider: data_lake
+    method: GET
+    path: /manage/preview/{dataset}
+    description: >
+      Preview the first rows and schema of a Parquet dataset.
+      Use to inspect column names, types, and sample data before
+      running a cleaning or transformation operation.
+    supervised: false
+
+  - name: drop_columns
+    provider: data_lake
+    method: POST
+    path: /manage/clean/drop-columns
+    description: >
+      Remove one or more columns from a dataset in-place.
+      Body: {"dataset": "<name>", "columns": ["col1", "col2"]}.
+      DESTRUCTIVE — modifies the dataset permanently.
+    supervised: true
+
+  - name: fill_nulls
+    provider: data_lake
+    method: POST
+    path: /manage/clean/fill-nulls
+    description: >
+      Fill null values in a dataset column using a strategy: mean, median, mode,
+      or a fixed value. Body: {"dataset": "<name>", "column": "<col>",
+      "strategy": "mean|median|mode|value", "value": <optional>}.
+      DESTRUCTIVE — modifies the dataset permanently.
+    supervised: true
+
+  - name: rename_columns
+    provider: data_lake
+    method: POST
+    path: /manage/clean/rename
+    description: >
+      Rename columns in a dataset in-place.
+      Body: {"dataset": "<name>", "rename_map": {"old_col": "new_col"}}.
+      DESTRUCTIVE — modifies the dataset permanently.
+    supervised: true
+
+  - name: filter_rows
+    provider: data_lake
+    method: POST
+    path: /manage/clean/filter-rows
+    description: >
+      Keep only rows matching a SQL WHERE clause, dropping all others.
+      Body: {"dataset": "<name>", "filter": "season >= 2020"}.
+      DESTRUCTIVE — modifies the dataset permanently. Use preview_dataset first.
+    supervised: true
+
+  # ── Model Platform: Health ──────────────────────────────────────────────────
+
+  - name: model_health
+    provider: model_platform
+    method: GET
+    path: /health
+    description: >
+      Liveness check for the model platform.
+      Use when the user asks if the model service is running.
+    supervised: false
+
+  - name: model_health_ready
+    provider: model_platform
+    method: GET
+    path: /health/ready
+    description: >
+      Readiness check for the model platform: verifies Redis connectivity
+      and that the model registry is populated.
+      Use when the user asks if models are ready to serve predictions.
+    supervised: false
+
+  - name: list_models
+    provider: model_platform
+    method: GET
+    path: /health/models
+    description: >
+      List all registered models in the model platform registry.
+      Use when the user asks what models are available.
+    supervised: false
+
+  # ── Model Platform: Player Projection ───────────────────────────────────────
+
+  - name: player_projection_schema
+    provider: model_platform
+    method: GET
+    path: /player-projection/schema
+    description: >
+      Get the input feature schema for the player projection model.
+      Call this before predict if you're unsure what fields are required.
+    supervised: false
+
+  - name: player_projection_predict
+    provider: model_platform
+    method: POST
+    path: /player-projection/predict
+    schema_path: /player-projection/schema
+    description: >
+      Predict a player's performance projection given combine and career stats.
+      Returns score, confidence, and SHAP feature importance values.
+      Use when the user asks how a player is projected to perform.
+    supervised: false
+
+  # ── Model Platform: Positional Flexibility ───────────────────────────────────
+
+  - name: positional_flexibility_schema
+    provider: model_platform
+    method: GET
+    path: /positional-flexibility/schema
+    description: >
+      Get the input feature schema for the positional flexibility model.
+    supervised: false
+
+  - name: positional_flexibility_predict
+    provider: model_platform
+    method: POST
+    path: /positional-flexibility/predict
+    schema_path: /positional-flexibility/schema
+    description: >
+      Assess how flexibly a player can play across multiple positions.
+      Returns flexibility score and position fit probabilities.
+      Use when the user asks about a player's versatility or positional range.
+    supervised: false
+
+  # ── Model Platform: Team Diagnosis ──────────────────────────────────────────
+
+  - name: team_diagnosis_schema
+    provider: model_platform
+    method: GET
+    path: /team-diagnosis/schema
+    description: >
+      Get the input feature schema for the team diagnosis model.
+    supervised: false
+
+  - name: team_diagnosis_predict
+    provider: model_platform
+    method: POST
+    path: /team-diagnosis/predict
+    schema_path: /team-diagnosis/schema
+    description: >
+      Diagnose a team's strengths and weaknesses based on roster composition
+      and performance data. Returns area scores and recommendations.
+      Use when the user asks what a team needs or where they are weak.
+    supervised: false
+
+  # ── Model Platform: Draft Optimizer ─────────────────────────────────────────
+
+  - name: draft_optimizer_schema
+    provider: model_platform
+    method: GET
+    path: /draft-optimizer/schema
+    description: >
+      Get the input feature schema for the draft optimizer model.
+    supervised: false
+
+  - name: draft_optimizer_predict
+    provider: model_platform
+    method: POST
+    path: /draft-optimizer/predict
+    schema_path: /draft-optimizer/schema
+    description: >
+      Run draft optimization synchronously to recommend picks given team needs
+      and available players. Computationally expensive.
+      Use for quick draft scenarios with a small player pool.
+    supervised: true
+
+  - name: draft_optimizer_enqueue
+    provider: model_platform
+    method: POST
+    path: /draft-optimizer/jobs
+    schema_path: /draft-optimizer/schema
+    description: >
+      Enqueue an async draft optimizer job for larger scenarios.
+      Returns a job_id immediately. Follow up with draft_optimizer_poll
+      to retrieve the result when ready.
+      Use when the user wants a full draft board optimization.
+    supervised: true
+
+  - name: draft_optimizer_poll
+    provider: model_platform
+    method: GET
+    path: /draft-optimizer/jobs/{job_id}
+    description: >
+      Poll the status and result of an async draft optimizer job.
+      Returns status (pending/running/done/failed) and result when complete.
+      Use after draft_optimizer_enqueue to check if the job has finished.
+    supervised: false
+
+  # ── Model Platform: Career Simulator ────────────────────────────────────────
+
+  - name: career_simulator_schema
+    provider: model_platform
+    method: GET
+    path: /career-simulator/schema
+    description: >
+      Get the input feature schema for the career simulator model.
+    supervised: false
+
+  - name: career_simulator_predict
+    provider: model_platform
+    method: POST
+    path: /career-simulator/predict
+    schema_path: /career-simulator/schema
+    description: >
+      Simulate a player's career trajectory given current stats, age, and position.
+      Returns projected seasons, peak year, and career arc probabilities.
+      Use when the user asks how long a player will last or when they will peak.
+    supervised: false
+
+  # ── Model Platform: Roster Fit ───────────────────────────────────────────────
+
+  - name: roster_fit_schema
+    provider: model_platform
+    method: GET
+    path: /roster-fit/schema
+    description: >
+      Get the input feature schema for the roster fit model.
+    supervised: false
+
+  - name: roster_fit_predict
+    provider: model_platform
+    method: POST
+    path: /roster-fit/predict
+    schema_path: /roster-fit/schema
+    description: >
+      Score how well a player fits a given team's current roster needs and scheme.
+      Returns fit score, positional need alignment, and scheme compatibility.
+      Use when the user asks whether a player would be a good fit for a team.
+    supervised: false
+
+  # ── Model Platform: Health Analyzer ─────────────────────────────────────────
+
+  - name: health_analyzer_schema
+    provider: model_platform
+    method: GET
+    path: /health-analyzer/schema
+    description: >
+      Get the input feature schema for the health analyzer model.
+    supervised: false
+
+  - name: health_analyzer_predict
+    provider: model_platform
+    method: POST
+    path: /health-analyzer/predict
+    schema_path: /health-analyzer/schema
+    description: >
+      Analyze injury risk and health outlook for a player given usage, age,
+      and physical profile. Returns risk score, injury probability by type,
+      and recommended workload limits.
+      Use when the user asks about a player's injury risk or durability outlook.
+    supervised: false
+
+
+agent:
+  model: claude-opus-4-6
+  max_tool_rounds: 8
+  system_prompt: |
+    You are NanoClaw, an NFL analytics assistant embedded in a scouting dashboard.
+    You have full access to the NFL data lake and 7 ML models.
+
+    Data lake capabilities:
+    - Players: combine stats, gold profiles, athletic/production/durability/draft-value scores, leaderboards
+    - Teams: abbreviations, season stats
+    - Graph: player connections, career paths, team rosters, college pipelines, shortest paths
+    - SQL: arbitrary read-only DuckDB queries for custom analysis
+    - Dataset management: preview, clean, and transform Parquet datasets
+
+    ML models: player projection, positional flexibility, team diagnosis,
+    draft optimizer (sync + async), career simulator, roster fit, health analyzer.
+    Each model also exposes a schema endpoint — call it first if unsure of required inputs.
+
+    Guidelines:
+    - Always fetch real data before answering analytical questions.
+    - For player questions: start with search_players or get_player_profile.
+    - For team questions: start with get_team_stats or get_team_roster_graph.
+    - Chain tools as needed: fetch data first, then run a model on that data.
+    - For supervised tools (draft_optimizer_*, drop_columns, fill_nulls,
+      rename_columns, filter_rows): describe exactly what you will run and why,
+      then stop and wait for user confirmation before calling the tool.
+    - When returning tabular or numeric results, structure your response so
+      the dashboard can render a chart or table (the composer handles this).
+    - Be concise. Lead with the answer, support it with data.
+
+memory:
+  redis_ttl_seconds: 86400
+  max_messages_in_redis: 20
+
+server:
+  port: 8002
+  cors_origins:
+    - "http://localhost:3000"
+    - "https://claw-hub.tailca9d37.ts.net"  # production dashboard

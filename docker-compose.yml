@@ -1,0 +1,32 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - nfl_net
+    volumes:
+      - redis_data:/data
+
+  nanoclaw:
+    image: ${IMAGE_NAME:-ghcr.io/samuelmolero26/nfl-agent-platform}:latest
+    ports:
+      - "8002:8002"
+    env_file: .env
+    volumes:
+      - nanoclaw_db:/app/data
+    environment:
+      SQLITE_PATH: /app/data/nanoclaw.db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - nfl_net
+    restart: unless-stopped
+
+volumes:
+  nanoclaw_db:
+  redis_data:
+
+networks:
+  nfl_net:
+    external: true
