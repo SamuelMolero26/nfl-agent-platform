@@ -60,6 +60,11 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
+            if [ -d /opt/nfl-agent-platform/.git ]; then
+              git -C /opt/nfl-agent-platform pull
+            else
+              git clone https://github.com/${{ github.repository }} /opt/nfl-agent-platform
+            fi
             cd /opt/nfl-agent-platform
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" --password-stdin
             docker network create nfl_net 2>/dev/null || true
