@@ -1,9 +1,9 @@
 providers:
   data_lake:
-    base_url: http://localhost:8000
+    base_url: http://nfl-data-platform-api-1:8000
     timeout: 10
   model_platform:
-    base_url: http://localhost:8080
+    base_url: http://nfl-model-platform-api-1:8000
     timeout: 30
 
 tools:
@@ -516,8 +516,8 @@ tools:
 
 
 agent:
-  model: claude-opus-4-6
-  max_tool_rounds: 8
+  model: claude-haiku-4-5-20251001
+  max_tool_rounds: 6
   system_prompt: |
     You are NanoClaw, an NFL analytics assistant embedded in a scouting dashboard.
     You have full access to the NFL data lake and 7 ML models.

@@ -46,7 +46,7 @@ def _infer_schema_from_config(tool_cfg: ToolConfig) -> dict:
         }
         required.append(param)
 
-    if tool_cfg.method == "GET" and not path_params:
+    if tool_cfg.method == "GET":
         properties["query_params"] = {
             "type": "object",
             "description": "Optional query parameters as key-value pairs.",

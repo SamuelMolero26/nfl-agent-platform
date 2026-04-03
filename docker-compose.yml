@@ -14,6 +14,8 @@ services:
     env_file: .env
     volumes:
       - nanoclaw_db:/app/data
+      - ./nanoclaw_service/config.yaml:/app/nanoclaw_service/config.yaml:ro
+      - ./nanoclaw_service/agent/core.py:/app/nanoclaw_service/agent/core.py:ro
     environment:
       SQLITE_PATH: /app/data/nanoclaw.db
       REDIS_URL: redis://redis:6379
@@ -21,6 +23,8 @@ services:
       - redis
     networks:
       - nfl_net
+      - nfl-data-platform_default
+      - nfl-model-platform_internal
     restart: unless-stopped
 
 volumes:
@@ -29,4 +33,8 @@ volumes:
 
 networks:
   nfl_net:
+    external: true
+  nfl-data-platform_default:
+    external: true
+  nfl-model-platform_internal:
     external: true
