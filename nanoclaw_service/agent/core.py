@@ -146,25 +146,18 @@ async def _finalize(
     tool_name: str,
     result: dict,
 ) -> dict:
-    """After executing a confirmed supervised tool, send result back to Claude for a summary."""
+    """After executing a confirmed supervised tool, re-enter the agentic loop so Claude
+    can chain further tool calls or compose a rich response."""
     followup = messages + [
         {
             "role": "user",
-            "content": f"The tool {tool_name} completed successfully. Result: {json.dumps(result)}. Please summarize.",
+            "content": (
+                f"Tool '{tool_name}' executed successfully. "
+                f"Result: {json.dumps(result)}"
+            ),
         }
     ]
-    response = await _get_client().messages.create(
-        model=settings.agent.model,
-        max_tokens=2048,
-        system=settings.agent.system_prompt,
-        messages=followup,
-    )
-    return {
-        "message": {"role": "assistant", "content": _extract_text(response)},
-        "visualizations": compose([tool_name], [{"tool": tool_name, "result": result}]),
-        "tool_calls_made": [tool_name],
-        "awaiting_confirmation": None,
-    }
+    return await run(session_id, followup)
 
 
 def _extract_text(response) -> str:
